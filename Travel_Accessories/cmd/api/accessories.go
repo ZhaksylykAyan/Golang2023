@@ -2,13 +2,40 @@ package main
 
 import (
 	"Travel_Accessories/internal/data"
+	"Travel_Accessories/internal/validator"
 	"fmt"
 	"net/http"
 	"time"
 )
 
 func (app *application) createAccessoriesHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "create a new accessory")
+	var input struct {
+		Title   string       `json:"title"`
+		Year    int32        `json:"year"`
+		Runtime data.Runtime `json:"runtime"`
+	}
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+	// Copy the values from the input struct to a new Movie struct.
+	accessory := &data.Accessories{
+		Title:   input.Title,
+		Year:    input.Year,
+		Runtime: input.Runtime,
+		//Genres: input.Genres,
+	}
+	// Initialize a new Validator.
+	v := validator.New()
+	// Call the ValidateMovie() function and return a response containing the errors if
+	// any of the checks fail.
+	if data.ValidateAccessory(v, accessory); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	fmt.Fprintf(w, "%+v\n", input)
 }
 func (app *application) showAccessoriesHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := app.readIDParam(r)
