@@ -10,9 +10,12 @@ import (
 
 func (app *application) createAccessoriesHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Title   string       `json:"title"`
-		Year    int32        `json:"year"`
-		Runtime data.Runtime `json:"runtime"`
+		Title    string       `json:"title"`
+		Year     int32        `json:"year"`
+		Runtime  data.Runtime `json:"runtime"`
+		Color    string       `json:"color"`
+		Material string       `json:"material"`
+		Price    float64      `json:"price"`
 	}
 	err := app.readJSON(w, r, &input)
 	if err != nil {
@@ -21,9 +24,12 @@ func (app *application) createAccessoriesHandler(w http.ResponseWriter, r *http.
 	}
 	// Copy the values from the input struct to a new Movie struct.
 	accessory := &data.Accessories{
-		Title:   input.Title,
-		Year:    input.Year,
-		Runtime: input.Runtime,
+		Title:    input.Title,
+		Year:     input.Year,
+		Runtime:  input.Runtime,
+		Color:    input.Color,
+		Material: input.Material,
+		Price:    input.Price,
 		//Genres: input.Genres,
 	}
 	// Initialize a new Validator.
@@ -49,6 +55,10 @@ func (app *application) showAccessoriesHandler(w http.ResponseWriter, r *http.Re
 		Title:     "Suitcases",
 		Runtime:   102,
 		Version:   1,
+		Year:      1996,
+		Color:     "blue",
+		Material:  "Aluminium",
+		Price:     12776,
 	}
 	err = app.writeJSON(w, http.StatusOK, envelope{"accessories": accessories}, nil)
 	if err != nil {

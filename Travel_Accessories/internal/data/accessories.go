@@ -14,6 +14,9 @@ type Accessories struct {
 	Year      int32     `json:"year"`
 	Runtime   Runtime   `json:"runtime,omitempty"`
 	Version   int32     `json:"version"`
+	Color     string    `json:"color"`
+	Material  string    `json:"material"`
+	Price     float64   `json:"price"`
 }
 
 func (a Accessories) MarshalJSON() ([]byte, error) {
@@ -34,16 +37,15 @@ func (a Accessories) MarshalJSON() ([]byte, error) {
 	return json.Marshal(aux)
 }
 
-func ValidateAccessory(v *validator.Validator, movie *Accessories) {
-	v.Check(movie.Title != "", "title", "must be provided")
-	v.Check(len(movie.Title) <= 500, "title", "must not be more than 500 bytes long")
-	v.Check(movie.Year != 0, "year", "must be provided")
-	v.Check(movie.Year >= 1888, "year", "must be greater than 1888")
-	v.Check(movie.Year <= int32(time.Now().Year()), "year", "must not be in the future")
-	v.Check(movie.Runtime != 0, "runtime", "must be provided")
-	v.Check(movie.Runtime > 0, "runtime", "must be a positive integer")
-	//v.Check(movie.Genres != nil, "genres", "must be provided")
-	//v.Check(len(movie.Genres) >= 1, "genres", "must contain at least 1 genre")
-	//v.Check(len(movie.Genres) <= 5, "genres", "must not contain more than 5 genres")
-	//v.Check(validator.Unique(movie.Genres), "genres", "must not contain duplicate values")
+func ValidateAccessory(v *validator.Validator, accessories *Accessories) {
+	v.Check(accessories.Title != "", "title", "must be provided")
+	v.Check(len(accessories.Title) <= 500, "title", "must not be more than 500 bytes long")
+	v.Check(accessories.Year != 0, "year", "must be provided")
+	v.Check(accessories.Year >= 1888, "year", "must be greater than 1888")
+	v.Check(accessories.Year <= int32(time.Now().Year()), "year", "must not be in the future")
+	v.Check(accessories.Runtime != 0, "runtime", "must be provided")
+	v.Check(accessories.Runtime > 0, "runtime", "must be a positive integer")
+	v.Check(accessories.Color != "", "color", "must be provided")
+	v.Check(accessories.Material != "", "material", "must be provided")
+	v.Check(accessories.Price >= 0, "price", "must be bigger than 0")
 }
