@@ -2,6 +2,7 @@ package data
 
 import (
 	"Travel_Accessories/internal/validator"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -31,7 +32,10 @@ func (a *AccessoriesModel) Insert(accessories *Accessories) error {
 		VALUES ($1, $2, $3, $4)
 		RETURNING id, created_at, version`
 	args := []interface{}{accessories.Title, accessories.Year, accessories.Runtime, accessories.Color}
-	return a.DB.QueryRow(query, args...).Scan(&accessories.ID, &accessories.CreatedAt, &accessories.Version)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	// Use QueryRowContext() and pass the context as the first argument.
+	return a.DB.QueryRowContext(ctx, query, args...).Scan(&accessories.ID, &accessories.CreatedAt, &accessories.Version)
 }
 
 func (a AccessoriesModel) Get(id int64) (*Accessories, error) {
@@ -39,11 +43,15 @@ func (a AccessoriesModel) Get(id int64) (*Accessories, error) {
 		return nil, ErrRecordNotFound
 	}
 	query := `
-SELECT id, created_at, title, year, runtime, genres, version
-FROM Accessoriess
+SELECT id, created_at, title, year, runtime, material, version, color, price
+FROM Accessories
 WHERE id = $1`
+
 	var accessory Accessories
-	err := a.DB.QueryRow(query, id).Scan(
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := a.DB.QueryRowContext(ctx, query, id).Scan(
 		&accessory.ID,
 		&accessory.CreatedAt,
 		&accessory.Title,
@@ -68,31 +76,44 @@ func (a AccessoriesModel) Update(accessory *Accessories) error {
 	query := `
 UPDATE movies
 SET title = $1, year = $2, runtime = $3, color = $4, version = version + 1
-WHERE id = $5
+WHERE id = $5 AND version = $6
 RETURNING version`
+
 	args := []interface{}{
 		accessory.Title,
 		accessory.Year,
 		accessory.Runtime,
 		accessory.Color,
 		accessory.ID,
+		accessory.Version,
 	}
-	return a.DB.QueryRow(query, args...).Scan(&accessory.Version)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := a.DB.QueryRowContext(ctx, query, args...).Scan(&accessory.Version)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrEditConflict
+		default:
+			return err
+		}
+	}
+	return nil
+
 }
 
 func (a AccessoriesModel) Delete(id int64) error {
-	// Return an ErrRecordNotFound error if the movie ID is less than 1.
 	if id < 1 {
 		return ErrRecordNotFound
 	}
-	// Construct the SQL query to delete the record.
 	query := `
 DELETE FROM accessories
 WHERE id = $1`
-	// Execute the SQL query using the Exec() method, passing in the id variable as
-	// the value for the placeholder parameter. The Exec() method returns a sql.Result
-	// object.
-	result, err := a.DB.Exec(query, id)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	result, err := a.DB.ExecContext(ctx, query, id)
 	if err != nil {
 		return err
 	}
