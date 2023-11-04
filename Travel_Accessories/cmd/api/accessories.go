@@ -78,7 +78,6 @@ func (app *application) updateAccessoryHandler(w http.ResponseWriter, r *http.Re
 		app.notFoundResponse(w, r)
 		return
 	}
-	// Retrieve the movie record as normal.
 	accessory, err := app.models.Accessories.Get(id)
 	if err != nil {
 		switch {
@@ -89,7 +88,6 @@ func (app *application) updateAccessoryHandler(w http.ResponseWriter, r *http.Re
 		}
 		return
 	}
-	// Use pointers for the Title, Year and Runtime fields.
 	var input struct {
 		Title    *string       `json:"title"`
 		Year     *int32        `json:"year"`
@@ -98,7 +96,6 @@ func (app *application) updateAccessoryHandler(w http.ResponseWriter, r *http.Re
 		Material *string       `json:"material"`
 		Price    *float64      `json:"price"`
 	}
-	// Decode the JSON as normal.
 	err = app.readJSON(w, r, &input)
 	if err != nil {
 		app.badRequestResponse(w, r, err)
@@ -165,4 +162,35 @@ func (app *application) deleteAccessoryHandler(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
+}
+
+func (app *application) listAccessoriesHandler(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Title string
+		//Genres   []string
+		data.Filters
+	}
+	v := validator.New()
+	qs := r.URL.Query()
+	input.Title = app.readString(qs, "title", "")
+	//input.Genres = app.readCSV(qs, "genres", []string{})
+	input.Filters.Page = app.readInt(qs, "page", 1, v)
+	input.Filters.PageSize = app.readInt(qs, "page_size", 20, v)
+	input.Filters.Sort = app.readString(qs, "sort", "id")
+	input.Filters.SortSafelist = []string{"id", "title", "year", "runtime", "-id", "-title", "-year", "-runtime"}
+	if data.ValidateFilters(v, input.Filters); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+	accessories, metadata, err := app.models.Accessories.GetAll(input.Title, input.Filters)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+	err = app.writeJSON(w, http.StatusOK, envelope{"accessories": accessories, "metadata": metadata}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+
+	fmt.Fprintf(w, "%+v\n", input)
 }

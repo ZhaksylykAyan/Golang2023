@@ -127,6 +127,49 @@ WHERE id = $1`
 	return nil
 }
 
+func (a AccessoriesModel) GetAll(title string, filters Filters) ([]*Accessories, Metadata, error) {
+	query := fmt.Sprintf(`
+SELECT count(*) OVER(), id, created_at, title, year, runtime, material, version, color, price
+FROM accessories
+WHERE (to_tsvector('simple', title) @@ plainto_tsquery('simple', $1) OR $1 = '')
+ORDER BY %s %s, id ASC
+LIMIT $3 OFFSET $4`, filters.sortColumn(), filters.sortDirection())
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	args := []interface{}{title, filters.limit(), filters.offset()}
+	rows, err := a.DB.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, Metadata{}, err
+	}
+	defer rows.Close()
+	totalRecords := 0
+	accessories := []*Accessories{}
+	for rows.Next() {
+		var accessory Accessories
+		err := rows.Scan(
+			&totalRecords,
+			&accessory.ID,
+			&accessory.CreatedAt,
+			&accessory.Title,
+			&accessory.Year,
+			&accessory.Runtime,
+			&accessory.Material,
+			&accessory.Version,
+			&accessory.Color,
+			&accessory.Price,
+		)
+		if err != nil {
+			return nil, Metadata{}, err
+		}
+		accessories = append(accessories, &accessory)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, Metadata{}, err
+	}
+	metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
+	return accessories, metadata, nil
+}
+
 func (a Accessories) MarshalJSON() ([]byte, error) {
 
 	var runtime string
