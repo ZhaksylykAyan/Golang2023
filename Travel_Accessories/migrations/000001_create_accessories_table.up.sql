@@ -10,3 +10,7 @@ CREATE TABLE IF NOT EXISTS accessories
     color      text                        NOT NULL,
     price      float                       NOT NULL
 );
+
+create table if not exists test(
+    id int
+)
