@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS accessories
     version    integer                     NOT NULL DEFAULT 1,
     color      text                        NOT NULL,
     price      float                       NOT NULL
-);
+    );
 
 create table if not exists test(
     id int
